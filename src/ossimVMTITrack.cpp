@@ -15,7 +15,6 @@ ossimVMTITrack::ossimVMTITrack()
     m_targetMaxIntensity(0.0),
     m_minGsd(FLT_MAX),
     m_maxGsd(0.0), 
-    m_thumbnailPath(), 
     m_klvTrackMetadata(ossimString("[\n\t\t\t\t")),
     m_init(true)
 {

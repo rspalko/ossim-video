@@ -367,7 +367,7 @@ void ossimPredatorVideo::countFrames(ossim_uint32& frames, ossim_uint32& klvs)
    {
      adjustSeek();
      while(av_read_frame(theFormatCtx, &packet)>=0)
-     {^M
+     {
        if(packet.stream_index == theKlvStreamIndex) ++klvs;
        if(packet.stream_index == theVideoStreamIndex) ++frames;
      }
