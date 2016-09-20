@@ -64,3 +64,4 @@ private:
 
   TYPE_DATA
 };
+#endif
