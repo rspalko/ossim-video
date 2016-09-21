@@ -2807,3 +2807,1432 @@ void ossimPredatorKlvTable::addBoundarySeries(const std::vector<ossim_uint8>& bu
       } 
    }
 }
+
+//#include <ossim/base/ossimTraceManager.h>
+void ossimPredatorKlvTable::addUasDatalinkLocalDataSet(const std::vector<ossim_uint8>& buffer, klvMapType& tempTable, ossim_uint16& checksum)
+{
+ 
+
+//   ossimTraceManager::instance()->setTracePattern("ossimPredatorKlvTable.*");
+//   if (traceDebug()) std::cout << "ossimPredatorKlvTable::addUasDatalinkLocalDataSet: entered....................\n";
+   if(buffer.size() == 0) return;
+   ossim_uint32 idx = 0;
+   bool done = false;
+   while(!done&&((idx+2) < buffer.size()))
+   {
+      ossim_uint32 key = lds_decode_key(&buffer[0], idx);
+      //ossim_uint32 key= buffer[idx++];
+      //ossim_uint32 length= buffer[idx++];
+      ossim_uint32 length= klv_decode_length(&buffer[0], idx);
+      //std::cout << "KEY ====================== " << key << std::endl;
+      //std::cout << "LENGTH ====================== " << length << std::endl;
+      if(length > 0)
+      {
+        switch(key)
+        {
+           case 1: // checksum
+           {
+              //std::cout << "CHECKSUM\n";
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              checksum = buf;
+              break;
+           }
+           case 2: // unix timestamp
+           {
+              ossim_uint64 value = *reinterpret_cast<const ossim_uint64*>(&buffer.front()+idx);
+	      //valueToString already swaps this, so it was getting swapped twice
+              //if(theNeedToSwapFlag)
+              //{
+              //  theEndian.swap(value);
+              //}
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_UNIX_TIMESTAMP,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              Node n2(KLV_KEY_UNIX_TIMESTAMP_RAW,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n2.theId),
+                                                     n2));
+              
+              break;
+           }
+           case 3:
+           {
+              Node n(KLV_KEY_MISSION_NUMBER,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //std::cout << "MISSION ID!!" << std::endl;
+              break;
+           }
+           case 4:
+           {
+              Node n(KLV_KEY_PLATFORM_TAIL_NUMBER,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //std::cout << "PLATFORM TAIL!! " << valueAsString(KLV_KEY_PLATFORM_TAIL_NUMBER) << std::endl;
+              break;
+           }
+           case 5:
+           {
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 heading  = mapValue(buf, 0.0, (1<<16) - 1, 0.0, 360.0);
+              //std::cout << "HEADING == " << heading << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(heading);
+              }
+
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&heading);
+              Node n(KLV_KEY_PLATFORM_HEADING_ANGLE,
+                  std::vector<ossim_uint8>(tempBuf,
+                                           tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),n));
+              //            std::cout << "PLATFORM HEADING!!" << std::endl;
+              break;
+           }
+           case 6:
+           {
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -((1<<15)-1), ((1<<15)-1), -20,20);//20.0*(buf)/(double)((1<<15) - 1);
+              //std::cout << "PITCH == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_PLATFORM_PITCH_ANGLE,
+                  std::vector<ossim_uint8>(tempBuf,
+                                           tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),n));
+             //            std::cout << "PLATFORM PITCH!!" << std::endl;
+              break;
+           }
+           case 7:
+           {
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              double value  = mapValue(buf, -((1<<15)-1), ((1<<15)-1), -50,50);
+              //std::cout << "ROLL == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_PLATFORM_ROLL_ANGLE,
+                  std::vector<ossim_uint8>(tempBuf,
+                                           tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),n));
+              //            std::cout << "PLATFORM ROLL!!" << std::endl;
+              break;
+           }
+           case 8:
+           {
+             //ossim_uint8 buf = *reinterpret_cast<const ossim_uint8*>(&buffer.front()+idx);
+              
+              if(traceDebug()) std::cout << "PLATFORM TRUE AIRSPEED not handled!!" << std::endl;
+              break;
+           }
+           case 9:
+           {
+              Node n(KLV_KEY_INDICATED_AIR_SPEED,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //if(traceDebug()) std::cout << "PLATFORM INDICATED AIRSPEED!!" << std::endl;
+              break;
+           }
+           case 10:
+           {
+              Node n(KLV_KEY_PLATFORM_DESIGNATION,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              //std::cout << "PLATFORM DESIGNATION: " << valueAsString(KLV_KEY_PLATFORM_DESIGNATION) << std::endl;
+              //if(traceDebug()) std::cout << "PLATFORM DESIGNATION not handled!!" << std::endl;
+              break;
+           }
+           case 11: // KLV_KEY_IMAGE_SOURCE_SENSOR
+           {
+              Node n(KLV_KEY_IMAGE_SOURCE_SENSOR,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+             // std::cout << "IMAGE SOURCE SENSOR!!" << valueAsString(KLV_KEY_IMAGE_SOURCE_SENSOR).trim()<< std::endl;
+              break;
+           }
+           case 12:
+           {
+              Node n(KLV_KEY_IMAGE_COORDINATE_SYSTEM,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //std::cout << "IMAGE COORDINATE SYSTEM!!" << std::endl;
+              break;
+           }
+           case 13://KLV_KEY_SENSOR_LATITUDE
+           {
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+
+              // Map -(2^31-1)..(2^31-1) to +/-90.
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90, 90);//(360.0*(((double)buf + 2147483647.0)/(4294967294.0)))-180.0; //180.0*((buf)/(double)((ossim_int64)(1<<31) - 1));
+              //std::cout << "LAT == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_LATITUDE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              //            std::cout << "SENSOR LAT!!" << std::endl;
+              break;
+           }
+           case 14://KLV_KEY_SENSOR_LONGITUDE
+           {
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              //KLV_KEY_SENSOR_LONGITUDE
+              // Map -(2^31-1)..(2^31-1) to +/-180.
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180, 180); //180.0*((buf)/(double)((ossim_int64)(1<<31) - 1));
+              //std::cout << "LON == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_LONGITUDE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //            std::cout << "SENSOR LON!!" << std::endl;
+              break;
+           }
+           case 15://KLV_KEY_SENSOR_TRUE_ALTITUDE
+           {
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 65535, -900, 19000); 
+              //std::cout << "ALTITUDE == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_TRUE_ALTITUDE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+  //            std::cout << "SENSOR TRUE ALTITUDE!!" << std::endl;
+              break;
+           }
+           case 16://KLV_KEY_SENSOR_HORIZONTAL_FOV
+           {
+              // map -2^16-1..2^16-1 to 0..180
+             ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float32 value  = mapValue(buf, 0, 65535, 0, 180); 
+              //std::cout << "HFOV == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_HORIZONTAL_FOV,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+4));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              //            std::cout << "SENSOR HORIZONTAL FOV!!" << std::endl;
+              break;
+           }
+           case 17://KLV_KEY_SENSOR_VERTICAL_FOV1
+           {
+              // Map 0..(2^16-1) to 0..180.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float32 value  = mapValue(buf, 0, 65535, 0, 180); 
+              //std::cout << "VFOV == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_VERTICAL_FOV1,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+4));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 18://KLV_KEY_SENSOR_RELATIVE_AZIMUTH_ANGLE
+           {
+              // Map 0..(2^32-1) to 0..360.
+              ossim_uint32 buf = *reinterpret_cast<const ossim_uint32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 4294967295, 0, 360); 
+              //std::cout << "REALATIVE AZIMUTH == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_RELATIVE_AZIMUTH_ANGLE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+             //            std::cout << "SENSOR REALTIVE AZIMUTH ANGLE!!" << std::endl;
+              break;
+           }
+           case 19://KLV_KEY_SENSOR_RELATIVE_ELEVATION_ANGLE
+           {
+              //Map -(2^31-1)..(2^31-1) to +/-180.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647.0,2147483647.0,-180.0,180.0);
+              //std::cout << "REALATIVE Elevation == " << value << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_RELATIVE_ELEVATION_ANGLE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 20: //KLV_KEY_SENSOR_RELATIVE_ROLL_ANGLE
+           {
+              //0..(2^32-1) to 0..360.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 4294967295, 0, 360); 
+              //std::cout << "REALATIVE roll == " << value << std::endl;
+              //            std::cout << "SENSOR REALTIVE ROLL ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_RELATIVE_ROLL_ANGLE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 21: // KLV_KEY_SLANT_RANGE
+           {
+              // Map 0..(2^32-1) to 0..5000000
+              ossim_uint32 buf = *reinterpret_cast<const ossim_uint32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 4294967295, 0, 5000000); 
+              //std::cout << "SLANT range == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SLANT_RANGE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 22: //KLV_KEY_TARGET_WIDTH
+           {
+              //Map 0..(2^16-1) to 0..10000
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float32 value  = mapValue(buf, 0, 65535, 0, 10000); 
+              //std::cout << "TARGET width == " << value << std::endl;
+              //            std::cout << "TARGET WIDTH!!" << std::endl;
+               if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_TARGET_WIDTH,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+4));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 23:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0); 
+              //std::cout << "FRAME CENTER LAT == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_FRAME_CENTER_LATITUDE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 24:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-180
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180.0, 180.0); 
+              //std::cout << "FRAME CENTER LON == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_FRAME_CENTER_LONGITUDE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 25:
+           {
+             // Map 0..(2^16-1) to -900..19000
+              ossim_uint16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 65535, -900, 19000); 
+              //std::cout << "FRAME CENTER ELEV == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_FRAME_CENTER_ELEVATION,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 26: 
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_1,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 27:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lon 1 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_1,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 28:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lat 2 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_2,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 29:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lon 2 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_2,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 30:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lat 3 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_3,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 31:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lon 3 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_3,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 32:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //std::cout << "offset corner lat 4 == " << value << std::endl;
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_4,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 33:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-0.075.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -0.075, 0.075); 
+              //            std::cout << "SENSOR SLANT ANGLE!!" << std::endl;
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_4,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 34:
+           {
+              if(traceDebug()) std::cout << "ICING DETECTED Not Handled!!" << std::endl;
+              break;
+           }
+           case 35:
+           {
+              if(traceDebug()) std::cout << "WIND DIRECTION Not Handled!!" << std::endl;
+              break;
+           }
+           case 36:
+           {
+              if(traceDebug())  std::cout << "WIND SPEED not handled!!" << std::endl;
+              break;
+           }
+           case 37://KLV_KEY_STATIC_PRESSURE
+           {
+              // Map 0..(2^16-1) to 0..5000 mbar.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_uint16 value  = mapValue(buf, 0, 65535, 0, 5000); 
+              
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_STATIC_PRESSURE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+2));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+
+           //   if(traceDebug()) std::cout << "Static Pressure not handled!!" << std::endl;
+              break;
+           }
+           case 38:
+           {
+              if(traceDebug()) std::cout << "DENSITY ALTITUDE not handled!!" << std::endl;
+              break;
+           }
+           case 39:
+           {
+              if(traceDebug()) std::cout << "OUTSIDE AIR TEMP not handled!!" << std::endl;
+              break;
+           }
+           case 40:
+           {
+              if(traceDebug()) std::cout << "Target Location Latitude not handled!!" << std::endl;
+              break;
+           }
+           case 41:
+           {
+              if(traceDebug()) std::cout << "Target Location Longitude not handled!!" << std::endl;
+              break;
+           }
+           case 42:
+           {
+              if(traceDebug()) std::cout << "Target Location Elevation not handled!!" << std::endl;
+              break;
+           }
+           case 43:
+           {
+              if(traceDebug()) std::cout << "Target track gate width not handled!!" << std::endl;
+              break;
+           }
+           case 44:
+           {
+              if(traceDebug()) std::cout << "Target track gate height not handled!!" << std::endl;
+              break;
+           }
+           case 45:
+           {
+              if(traceDebug()) std::cout << "Target Error esitimate CE90 not handled!!" << std::endl;
+              break;
+           }
+           case 46:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Target Error esitimate LE90!!" << std::endl;
+              }
+              break;
+           }
+           case 47:
+           {
+              Node n(KLV_KEY_GENERIC_FLAG_DATA_01,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+
+              //std::cout << "Generic Flag Data 01!!" << (int)((buffer.front()+idx)) << std::endl;
+              break;
+           }
+           case 48:
+           {
+              std::vector<ossim_uint8> tempBuf(buffer.begin()+idx, buffer.begin()+idx+length);
+              addSecurityMetadataLocalSetElements(tempBuf, tempTable);
+              break;
+           }
+           case 49:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Differential pressure!!" << std::endl;
+              }
+              break;
+           }
+           case 50:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Platform angle of attack!!" << std::endl;
+              }
+              break;
+           }
+           case 51:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Platform vertical speed!!" << std::endl;
+              }
+              break;
+           }
+           case 52:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Platform side slip angle!!" << std::endl;
+              }
+              break;
+           }
+           case 53:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "airfilled barometrc pressure!!" << std::endl;
+              }
+              // airfiled barometrc pressure
+              break;
+           }
+           case 54:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "airfiled elevation!! Not handled" << std::endl;
+              }
+              // airfiled elevation
+              break;
+           }
+           case 55:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "relative humidity!! Not handled" << std::endl;
+              }
+              // relative humidity
+              break;
+           }
+           case 56://KLV_KEY_PLATFORM_GROUND_SPEED
+           {
+              Node n(KLV_KEY_PLATFORM_GROUND_SPEED,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              // platform ground speed
+              break;
+           }
+           case 57:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "ground range!! Not handled" << std::endl;
+              }
+              // ground range
+              break;
+           }
+           case 58:
+           {
+              if(traceDebug())
+              {
+                 std::cout << " platform fuel remaining! Not handled" << std::endl;
+              }
+              // platform fuel remaining
+              break;
+           }
+           case 59:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "platform call sign! Not handled" << std::endl;
+              }
+             // platform call sign
+              break;
+           }
+           case 60:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "weapon load! Not handled" << std::endl;
+              }
+             // weapon load
+              break;
+           }
+           case 61:
+           {
+              if(traceDebug())
+              {
+                  std::cout << "weapon fired Not Handled!" << std::endl;
+              }
+              // weapon fired
+              break;
+           }
+           case 62:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Laser PRF Code Not handled" << std::endl;
+              }
+              // Laser PRF Code
+              break;
+           }
+           case 63:
+           {
+              if(traceDebug())
+              {
+                 std::cout << "Sensor Field of View Name Not handled" << std::endl;
+              }
+             //Sensor Field of View Name
+              break;
+           }
+           case 64:// KLV_KEY_PLATFORM_MAGNETIC_HEADING_ANGLE
+           {
+              // Map 0..(2^16-1) to 0..360.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 65535, 0, 360); 
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_PLATFORM_MAGNETIC_HEADING_ANGLE,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+             //            std::cout << "SENSOR REALTIVE AZIMUTH ANGLE!!" << std::endl;
+             // platform magnetic heading
+              break;
+           }
+           case 65:// KLV_KEY_UAS_LDS_VERSION_NUMBER
+           {
+              Node n(KLV_KEY_UAS_LDS_VERSION_NUMBER,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              //std::cout << "KLV_KEY_UAS_LDS_VERSION_NUMBER: " << valueAsString(KLV_KEY_UAS_LDS_VERSION_NUMBER) <<std::endl;
+              // UAS LDS Version Number
+              break;
+           }
+           case 66:
+           {
+              if(traceDebug()) std::cout << "target location covariance matrix  Not handled" << std::endl;
+             // target locatio covariance matrix
+              break;
+           }
+           case 67:
+           {
+              // alternate platform latitude
+              if(traceDebug()) std::cout << " alternate platform latitude No Handled!"  << std::endl;  
+              break;
+           }
+           case 68:
+           {
+                 if(traceDebug()) std::cout << "alternate platform longitude Not Handled! "  <<key  << std::endl;  
+             // alternate platform longitude
+              break;
+           }
+           case 69:
+           {
+              // alternate platform altitude
+                if(traceDebug())  std::cout << "alternate platform altitude Not handled "  <<key  << std::endl;  
+             break;
+           }
+           case 70:
+           {
+              // alternate platform name
+               if(traceDebug()) std::cout << "alternate platform name Not handled "  <<key  << std::endl;  
+             break;
+           }
+           case 71:
+           {
+              // alternate platform heading
+              if(traceDebug()) std::cout << "alternate platform heading Not handled "  <<key  << std::endl;  
+              break;
+           }
+           case 72:
+           {
+              if(traceDebug()) std::cout << "EVENT START TIME  Not handled "  <<key  << std::endl;  
+  //            std::cout << "EVENT START TIME!!" << std::endl;
+              break;
+           }
+	   case 74:
+	   {
+              std::vector<ossim_uint8> tempBuf(buffer.begin()+idx, buffer.begin()+idx+length);
+              addVMTILocalDataSetElements(tempBuf, tempTable);
+              break;
+	   }
+	   case 75:
+	   {
+              // Map 0..(2^16-1) to -900..19000.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 65535, -900, 19000);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_ELLIPSOID_HEIGHT,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+	   }
+           case 77:
+           {
+              Node n(KLV_KEY_OPERATIONAL_MODE,
+                     std::vector<ossim_uint8>(buffer.begin()+idx,
+                                              buffer.begin()+idx+length));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              //std::cout << "KLV_KEY_UAS_LDS_VERSION_NUMBER: " << valueAsString(KLV_KEY_UAS_LDS_VERSION_NUMBER) <<std::endl;
+              // UAS LDS Version Number
+              break;
+	   }
+
+           case 78:
+           {
+              // Map 0..(2^16-1) to -900..19000.
+              ossim_uint16 buf = *reinterpret_cast<const ossim_uint16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, 0, 65535, -900, 19000);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_FRAME_CENTER_HEIGHT_ABOVE_ELLIPSOID,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 79:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-327.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -327, 327);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_NORTH_VELOCITY,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 80:
+           {
+              // Map -(2^15-1)..(2^15-1) to +/-327.
+              ossim_int16 buf = *reinterpret_cast<const ossim_int16*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -32767, 32767, -327, 327);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_SENSOR_EAST_VELOCITY,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+	   case 82:
+	   {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LATITUDE_POINT_1,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+	   }
+	   case 83:
+	   {
+              // Map -(2^31-1)..(2^31-1) to +/-180
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180.0, 180.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LONGITUDE_POINT_1,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+	   }
+           case 84:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LATITUDE_POINT_2,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 85:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-180
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180.0, 180.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LONGITUDE_POINT_2,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 86:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LATITUDE_POINT_3,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 87:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-180
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180.0, 180.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LONGITUDE_POINT_3,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 88:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LATITUDE_POINT_4,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 89:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-180
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -180.0, 180.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_CORNER_LONGITUDE_POINT_4,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 90:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_PLATFORM_PITCH_ANGLE_FULL,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           case 91:
+           {
+              // Map -(2^31-1)..(2^31-1) to +/-90
+              ossim_int32 buf = *reinterpret_cast<const ossim_int32*>(&buffer.front()+idx);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(buf);
+              }
+              ossim_float64 value  = mapValue(buf, -2147483647, 2147483647, -90.0, 90.0);
+              if(theNeedToSwapFlag)
+              {
+                 theEndian.swap(value);
+              }
+              ossim_uint8* tempBuf = reinterpret_cast<ossim_uint8*>(&value);
+              Node n(KLV_KEY_PLATFORM_ROLL_ANGLE_FULL,
+                     std::vector<ossim_uint8>(tempBuf,
+                                              tempBuf+8));
+              tempTable.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(n.theId),
+                                                     n));
+              break;
+           }
+           default:
+           {
+		std::cout << "KEY NOT HANDLED "  <<key  << std::endl;
+              if(traceDebug() ) std::cout << "KEY NOT HANDLED "  <<key  << std::endl;  
+              break;
+           }
+        }
+      }
+      idx +=length;
+   }
+   /*
+   ossimDpt pt1,pt2,pt3,pt4;
+   if(getFrameCenterOffsets(pt1,pt2,pt3,pt4))
+   {
+      ossim_float64 lat,lon,elevation;
+      if(getFrameCenter(lat, lon, elevation))
+      {
+         ossim_float64 cornerLat[4];
+         ossim_float64 cornerLon[4];
+
+         cornerLat[0] = lat + pt1.lat;
+         cornerLat[1] = lat + pt2.lat;
+         cornerLat[2] = lat + pt3.lat;
+         cornerLat[3] = lat + pt4.lat;
+         cornerLon[0] = lon + pt1.lon;
+         cornerLon[1] = lon + pt2.lon;
+         cornerLon[2] = lon + pt3.lon;
+         cornerLon[3] = lon + pt4.lon;
+
+
+         if(theNeedToSwapFlag)
+         {
+            theEndian.swap(cornerLat[0]);
+            theEndian.swap(cornerLat[1]);
+            theEndian.swap(cornerLat[2]);
+            theEndian.swap(cornerLat[3]);
+            theEndian.swap(cornerLon[0]);
+            theEndian.swap(cornerLon[1]);
+            theEndian.swap(cornerLon[2]);
+            theEndian.swap(cornerLon[3]);
+         }
+
+         ossim_uint8* cornerLat1Buf = reinterpret_cast<ossim_uint8*>(&cornerLat[0]);
+         Node cornerLat1Node(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_1,
+                std::vector<ossim_uint8>(cornerLat1Buf,
+                                         cornerLat1Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLat1Node.theId),
+                                                cornerLat1Node));
+         ossim_uint8* cornerLat2Buf = reinterpret_cast<ossim_uint8*>(&cornerLat[1]);
+         Node cornerLat2Node(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_2,
+                std::vector<ossim_uint8>(cornerLat2Buf,
+                                         cornerLat2Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLat2Node.theId),
+                                                cornerLat2Node));
+         ossim_uint8* cornerLat3Buf = reinterpret_cast<ossim_uint8*>(&cornerLat[2]);
+         Node cornerLat3Node(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_3,
+                std::vector<ossim_uint8>(cornerLat3Buf,
+                                         cornerLat3Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLat3Node.theId),
+                                                cornerLat3Node));
+         ossim_uint8* cornerLat4Buf = reinterpret_cast<ossim_uint8*>(&cornerLat[3]);
+         Node cornerLat4Node(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_4,
+                std::vector<ossim_uint8>(cornerLat4Buf,
+                                         cornerLat4Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLat4Node.theId),
+                                                cornerLat4Node));
+
+
+         ossim_uint8* cornerLon1Buf = reinterpret_cast<ossim_uint8*>(&cornerLon[0]);
+         Node cornerLon1Node(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_1,
+                std::vector<ossim_uint8>(cornerLon1Buf,
+                                         cornerLon1Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLon1Node.theId),
+                                                cornerLon1Node));
+         ossim_uint8* cornerLon2Buf = reinterpret_cast<ossim_uint8*>(&cornerLon[1]);
+         Node cornerLon2Node(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_2,
+                std::vector<ossim_uint8>(cornerLon2Buf,
+                                         cornerLon2Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLon2Node.theId),
+                                                cornerLon2Node));
+         ossim_uint8* cornerLon3Buf = reinterpret_cast<ossim_uint8*>(&cornerLon[2]);
+         Node cornerLon3Node(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_3,
+                std::vector<ossim_uint8>(cornerLon3Buf,
+                                         cornerLon3Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLon3Node.theId),
+                                                cornerLon3Node));
+         ossim_uint8* cornerLon4Buf = reinterpret_cast<ossim_uint8*>(&cornerLon[3]);
+         Node cornerLon4Node(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_4,
+                std::vector<ossim_uint8>(cornerLon4Buf,
+                                         cornerLon4Buf+8));
+         theKlvParameters.insert(std::make_pair(static_cast<ossimPredatorKlvIndex>(cornerLon4Node.theId),
+                                                cornerLon4Node));
+       
+  // std::cout << "corner1 = " << valueAsString(KLV_KEY_OFFSET_CORNER_LATITUDE_POINT_1) << ", " 
+   //          << valueAsString(KLV_KEY_OFFSET_CORNER_LONGITUDE_POINT_1) << std::endl;
+      }
+   }
+   */
+}
+
+std::ostream& ossimPredatorKlvTable::print(std::ostream& out)const
+{
+  klvMapType::const_iterator iter = theKlvParameters.begin();
+  while(iter!=theKlvParameters.end())
+  {
+    //for (klvMapType::const_iterator iter=theKlvParameters.equal_range(id).first; iter!=theKlvParameters.equal_range(id).second; ++iter)
+    //{
+    int idx = findPredatorKlvIndexByKey((*iter).second.theId);
+    if(idx >= 0)
+    {
+        //out << (*iter).second.theId << "," << (*iter).first<< ", " << OSSIM_PREDATOR_UDS_TABLE[idx].theName << ": " << valueAsString((*iter).first) << "\n";
+      out << OSSIM_PREDATOR_UDS_TABLE[idx].theName <<  " " << ossimString::toString((*iter).second.theSet) << ":" << ossimString::toString((*iter).second.theIndex) << " " << valueAsString((*iter).first, (*iter).second.theSet, (*iter).second.theIndex) << "\n";
+    }
+    ++iter;
+    //}
+  }
+  return out;
+}
+
+ossim_uint16 ossimPredatorKlvTable::compute16BitChecksum(const std::vector<ossim_uint8>& checksumBuffer)const
+{
+
+  const ossim_uint8* buf= &checksumBuffer.front();
+  ossim_uint16 len = checksumBuffer.size();
+ // Initialize Checksum and counter variables.
+  ossim_uint16 bcc = 0, i=0;
+
+  // Sum each 16-bit chunk within the buffer into a checksum
+  for ( i = 0 ; i < len; ++i)
+    bcc += buf[i] << (8 * ((i + 1) % 2));
+  return bcc;
+}
